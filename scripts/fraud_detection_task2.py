@@ -131,16 +131,12 @@ def main():
     fraud_data, creditcard_data = load_processed_data()
 
     # Prepare data
-    fraud_X_train, fraud_X_test, fraud_y_train, fraud_y_test = prepare_data(
-        fraud_data, "Fraud_Data")
-    creditcard_X_train, creditcard_X_test, creditcard_y_train, creditcard_y_test = prepare_data(
-        creditcard_data, "creditcard")
+    fraud_X_train, fraud_X_test, fraud_y_train, fraud_y_test = prepare_data(fraud_data, "Fraud_Data")
+    creditcard_X_train, creditcard_X_test, creditcard_y_train, creditcard_y_test = prepare_data(creditcard_data, "creditcard")
 
     # Train and evaluate models
-    fraud_results = train_and_evaluate(
-        fraud_X_train, fraud_X_test, fraud_y_train, fraud_y_test, "fraud_data")
-    creditcard_results = train_and_evaluate(
-        creditcard_X_train, creditcard_X_test, creditcard_y_train, creditcard_y_test, "creditcard")
+    fraud_results = train_and_evaluate(fraud_X_train, fraud_X_test, fraud_y_train, fraud_y_test, "fraud_data")
+    creditcard_results = train_and_evaluate(creditcard_X_train, creditcard_X_test, creditcard_y_train, creditcard_y_test, "creditcard")
 
     # Justify model selection
     justify_model_selection(fraud_results, creditcard_results)
