@@ -252,8 +252,8 @@ def feature_engineering(fraud_data):
     
     return fraud_data
 
-def transform_data(df, dataset_name):
-    """Enhanced data transformation with business context"""
+def transform_data_fixed(df, dataset_name):
+    """Fixed data transformation that properly handles all data types"""
     print(f"\n=== DATA TRANSFORMATION - {dataset_name} ===")
     
     # Handle class imbalance analysis
@@ -266,42 +266,57 @@ def transform_data(df, dataset_name):
         print(f"Class distribution: {class_dist.to_dict()}")
         print(f"Imbalance ratio: {class_dist[0]/class_dist[1]:.2f}:1")
     
-    # Prepare for encoding
-    df_encoded = df.copy()
+    # Create a copy for processing
+    df_processed = df.copy()
     
-    # Handle categorical variables
-    categorical_cols = df_encoded.select_dtypes(include=['object']).columns
-    categorical_cols = [col for col in categorical_cols if col not in ['signup_time', 'purchase_time', 'user_id', 'device_id', 'ip_address']]
+    # Remove datetime and identifier columns that can't be used in modeling
+    columns_to_drop = ['signup_time', 'purchase_time', 'user_id', 'device_id', 'ip_address']
+    df_processed = df_processed.drop(columns=[col for col in columns_to_drop if col in df_processed.columns])
+    
+    # Handle categorical variables first
+    categorical_cols = df_processed.select_dtypes(include=['object', 'category']).columns
+    categorical_cols = [col for col in categorical_cols if col not in ['class', 'Class']]
     
     if len(categorical_cols) > 0:
-        # Use Label Encoding for ordinal categorical variables
+        print(f"Processing {len(categorical_cols)} categorical columns: {categorical_cols}")
+        # Use Label Encoding for categorical variables
         label_encoder = LabelEncoder()
         for col in categorical_cols:
-            if col in ['sex', 'browser', 'source', 'country', 'age_group']:
-                df_encoded[col] = label_encoder.fit_transform(df_encoded[col].astype(str))
+            df_processed[col] = label_encoder.fit_transform(df_processed[col].astype(str))
     
-    # Remove non-numeric columns that can't be used in modeling
-    columns_to_drop = ['signup_time', 'purchase_time', 'user_id', 'device_id', 'ip_address']
-    df_encoded = df_encoded.drop(columns=[col for col in columns_to_drop if col in df_encoded.columns])
+    # Ensure all remaining columns are numeric
+    for col in df_processed.columns:
+        if col not in ['class', 'Class']:
+            if df_processed[col].dtype == 'object':
+                # Convert to numeric, replacing non-numeric values with NaN
+                df_processed[col] = pd.to_numeric(df_processed[col], errors='coerce')
     
-    # Handle missing values in encoded data
-    df_encoded = df_encoded.fillna(df_encoded.median())
+    # Handle missing values in processed data (only for numeric columns)
+    numeric_cols = df_processed.select_dtypes(include=['float64', 'int64']).columns
+    numeric_cols = [col for col in numeric_cols if col not in ['class', 'Class']]
+    
+    for col in numeric_cols:
+        if df_processed[col].isnull().sum() > 0:
+            median_val = df_processed[col].median()
+            df_processed[col].fillna(median_val, inplace=True)
+            print(f"Filled missing values in {col} with median: {median_val}")
     
     # Normalization and Scaling
     scaler = StandardScaler()
-    target_col = 'class' if 'class' in df_encoded.columns else 'Class'
-    feature_cols = [col for col in df_encoded.columns if col != target_col]
+    target_col = 'class' if 'class' in df_processed.columns else 'Class'
+    feature_cols = [col for col in df_processed.columns if col != target_col]
     
-    df_encoded[feature_cols] = scaler.fit_transform(df_encoded[feature_cols])
+    df_processed[feature_cols] = scaler.fit_transform(df_processed[feature_cols])
     
-    print(f"Final dataset shape: {df_encoded.shape}")
+    print(f"Final dataset shape: {df_processed.shape}")
     print(f"Features: {len(feature_cols)}")
+    print(f"Data types: {df_processed.dtypes.value_counts()}")
     
-    return df_encoded
+    return df_processed
 
 # Main execution
 if __name__ == "__main__":
-    print("=== FRAUD DETECTION - TASK 1: DATA ANALYSIS AND PREPROCESSING ===\n")
+    print("=== FRAUD DETECTION - TASK 1: DATA ANALYSIS AND PREPROCESSING (FIXED) ===\n")
     
     # Step 1: Handle Missing Values
     fraud_data = handle_missing_values(fraud_data, "Fraud_Data")
@@ -321,17 +336,22 @@ if __name__ == "__main__":
     # Step 5: Feature Engineering
     fraud_data = feature_engineering(fraud_data)
     
-    # Step 6: Data Transformation
-    fraud_data_processed = transform_data(fraud_data, "Fraud_Data")
-    creditcard_data_processed = transform_data(creditcard_data, "CreditCard_Data")
+    # Step 6: Data Transformation (FIXED VERSION)
+    fraud_data_processed = transform_data_fixed(fraud_data, "Fraud_Data")
+    creditcard_data_processed = transform_data_fixed(creditcard_data, "CreditCard_Data")
     
     # Step 7: Save processed datasets
-    fraud_data_processed.to_csv(os.path.join(OUTPUT_DIR, "processed_fraud_data.csv"), index=False)
-    creditcard_data_processed.to_csv(os.path.join(OUTPUT_DIR, "processed_creditcard_data.csv"), index=False)
+    fraud_data_processed.to_csv(os.path.join(OUTPUT_DIR, "processed_fraud_data_fixed.csv"), index=False)
+    creditcard_data_processed.to_csv(os.path.join(OUTPUT_DIR, "processed_creditcard_data_fixed.csv"), index=False)
     
-    print("\n=== TASK 1 COMPLETED ===")
+    print("\n=== TASK 1 COMPLETED (FIXED) ===")
     print(f"Processed datasets saved to: {OUTPUT_DIR}")
     print(f"- Fraud_Data: {fraud_data_processed.shape}")
     print(f"- CreditCard_Data: {creditcard_data_processed.shape}")
-
-
+    
+    # Verify the data types
+    print("\n=== VERIFICATION ===")
+    print("Fraud_Data data types:")
+    print(fraud_data_processed.dtypes.value_counts())
+    print("\nCreditCard_Data data types:")
+    print(creditcard_data_processed.dtypes.value_counts()) 

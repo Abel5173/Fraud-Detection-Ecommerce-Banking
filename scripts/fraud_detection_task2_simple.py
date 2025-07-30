@@ -8,10 +8,6 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import (precision_recall_curve, auc, f1_score, confusion_matrix, 
                            classification_report, roc_auc_score, precision_score, recall_score)
 from imblearn.over_sampling import SMOTE
-from imblearn.under_sampling import RandomUnderSampler
-from imblearn.combine import SMOTEENN
-import lightgbm as lgb
-import xgboost as xgb
 import joblib
 import os
 import warnings
@@ -19,7 +15,6 @@ warnings.filterwarnings('ignore')
 
 # Set up directory paths with proper relative paths
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DATA_DIR = os.path.join(BASE_DIR, "data")
 OUTPUT_DIR = os.path.join(BASE_DIR, "outputs")
 MODEL_DIR = os.path.join(OUTPUT_DIR, "models")
 METRICS_DIR = os.path.join(OUTPUT_DIR, "metrics")
@@ -72,21 +67,13 @@ def train_and_evaluate(X_train, X_test, y_train, y_test, dataset_name):
     """Train and evaluate models with business-focused metrics"""
     print(f"\n=== MODEL TRAINING AND EVALUATION - {dataset_name} ===")
     
-    # Initialize models
+    # Initialize models (simplified version without LightGBM and XGBoost)
     models = {
         'logistic_regression': LogisticRegression(
             random_state=42, max_iter=1000, class_weight='balanced'
         ),
         'random_forest': RandomForestClassifier(
             random_state=42, n_estimators=100, class_weight='balanced'
-        ),
-        'lightgbm': lgb.LGBMClassifier(
-            random_state=42, n_estimators=100, class_weight='balanced',
-            verbose=-1
-        ),
-        'xgboost': xgb.XGBClassifier(
-            random_state=42, n_estimators=100, scale_pos_weight=1,
-            eval_metric='logloss', use_label_encoder=False
         )
     }
     
@@ -258,7 +245,7 @@ def justify_model_selection(fraud_results, creditcard_results):
     justification += f"""
     
     GENERAL OBSERVATIONS:
-    - Ensemble methods (Random Forest, LightGBM, XGBoost) generally outperform Logistic Regression
+    - Random Forest generally outperforms Logistic Regression on complex patterns
     - AUC-PR is preferred over accuracy for imbalanced fraud detection
     - Business cost analysis helps balance security vs. customer experience
     - Model selection should consider both performance and interpretability needs
@@ -286,7 +273,9 @@ def justify_model_selection(fraud_results, creditcard_results):
 
 def main():
     """Main execution function"""
-    print("=== FRAUD DETECTION - TASK 2: MODEL BUILDING AND TRAINING ===\n")
+    print("=== FRAUD DETECTION - TASK 2: MODEL BUILDING AND TRAINING (SIMPLIFIED) ===")
+    print("Note: This version uses only Logistic Regression and Random Forest")
+    print("For full functionality with LightGBM and XGBoost, install additional packages\n")
     
     try:
         # Load preprocessed data
@@ -314,4 +303,4 @@ def main():
         raise
 
 if __name__ == "__main__":
-    main()
+    main() 
